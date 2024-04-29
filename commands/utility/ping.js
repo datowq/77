@@ -4,6 +4,9 @@ module.exports = {
         .setName('ping')
         .setDescription('Replies with Pong!'),
     async execute(interaction) {
-        await interaction.reply('Pong!');
+        // Roundtrip Latency describes the amount of time a full API roundtrip takes
+        // (from the creation of the command message to the creation of the response message)
+        const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });
+        interaction.editReply(`Pong! Roundtrip latency: ${sent.createdTimestamp - interaction.createdTimestamp}ms`);
     },
 };

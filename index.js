@@ -2,16 +2,29 @@
 const { TOKEN } = require('./config.json');
 
 // Import the necessary discord.js classes
-const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, Events, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+
+//  Import the necessary discord-player classes
+const { Player } = require('discord-player');
+require('events').EventEmitter.defaultMaxListeners = 20;
+
+const { BridgeProvider, BridgeSource } = require('@discord-player/extractor');
+
+const bridgeProvider = new BridgeProvider(
+	BridgeSource.SoundCloud,
+);
 
 // Import file system module
 const fs = require('node:fs');
 const path = require('node:path');
 
+
 // Create a new client instance
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildVoiceStates,
 	],
 });
 
@@ -39,14 +52,47 @@ for (const folder of commandFolders) {
 	}
 }
 
+// Create a new Player instance
+client.player = new Player(client, {
+	bridgeProvider: bridgeProvider,
+	leaveOnEmpty: true,
+	volume: 70,
+});
+
 // When the client is ready, run this code (only once)
-client.once(Events.ClientReady, (readyClient) => {
+client.once(Events.ClientReady, async (readyClient) => {
 	console.log(`Logged in as ${readyClient.user.tag}!`);
+
+	// Get all ids of the servers
+	const guild_ids = client.guilds.cache.map(guild => guild.id);
+
+	// Construct and prepare an instance of the REST module
+	const rest = new REST().setToken(TOKEN);
+
+	await client.player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor');
+
+	// and deploy your commands!
+	(async () => {
+		try {
+			console.log(`Started refreshing application (/) commands for ${guild_ids.length} guilds.`);
+
+			for (const guild_id of guild_ids) {
+				let data = await rest.put(
+					Routes.applicationGuildCommands(client.user.id, guild_id),
+					{ body: client.commands.map(command => command.data.toJSON()) },
+				);
+				console.log(`Successfully reloaded ${data.length} application (/) commands for guild ${guild_id}.`);
+			}
+		} catch (error) {
+			// And of course, make sure you catch and log any errors!
+			console.error(error);
+		}
+	})();
 });
 
 client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
-	console.log(interaction)
+	// console.log(interaction)
 
 	const command = interaction.client.commands.get(interaction.commandName);
 
@@ -56,7 +102,7 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 
 	try {
-		await command.execute(interaction);
+		await command.execute({ client, interaction });
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {

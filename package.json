@@ -9,7 +9,10 @@
   "author": "datowq",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "@discord-player/extractor": "^4.4.7",
+    "discord-player": "^6.6.8",
+    "discord.js": "^14.14.1",
+    "mediaplex": "^0.0.9"
   },
   "devDependencies": {
     "eslint": "^9.1.1"
