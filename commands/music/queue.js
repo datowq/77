@@ -26,7 +26,7 @@ module.exports = {
         }
 
 
-        console.log(queueList)
+        // console.log(queueList)
 
         const embed = new EmbedBuilder()
             .setTitle(`Now Playing: **${currentTrack.title}**`)

@@ -69,7 +69,6 @@ client.player.events.on('playerStart', async (queue, track) => {
 client.player.events.on('audioTrackAdd', async (queue, track) => {
 	// Emitted when the player adds a single song to its queue
 	const queueLength = queue.tracks.toArray().length
-	console.log(queueLength);
 	if (queueLength >= 0) {
 		queue.metadata.send(`Track **${track.title}** queued`);
 	}
@@ -109,13 +108,13 @@ client.player.events.on('debug', async (queue, message) => {
 client.player.events.on('error', async (queue, error) => {
 	// Emitted when the player queue encounters error
 	console.log(`General player error event: ${error.message}`);
-	console.log(error);
+	// console.log(error);
 });
 
 client.player.events.on('playerError', async (queue, error) => {
 	// Emitted when the audio player errors while streaming audio track
 	console.log(`Player error event: ${error.message}`);
-	console.log(error);
+	// console.log(error);
 });
 
 // When the client is ready, run this code (only once)
