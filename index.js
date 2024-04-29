@@ -8,11 +8,7 @@ const { Client, Events, GatewayIntentBits, Collection, REST, Routes } = require(
 const { Player } = require('discord-player');
 require('events').EventEmitter.defaultMaxListeners = 20;
 
-const { BridgeProvider, BridgeSource } = require('@discord-player/extractor');
-
-const bridgeProvider = new BridgeProvider(
-	BridgeSource.SoundCloud,
-);
+const { EmbedBuilder } = require('discord.js');
 
 // Import file system module
 const fs = require('node:fs');
@@ -54,9 +50,72 @@ for (const folder of commandFolders) {
 
 // Create a new Player instance
 client.player = new Player(client, {
-	bridgeProvider: bridgeProvider,
 	leaveOnEmpty: true,
 	volume: 70,
+});
+
+client.player.events.on('playerStart', async (queue, track) => {
+	// Emitted when the player starts to play a song
+	// queue.metadata.send(`Started playing: **${track.title}** by **${track.author}**`);
+	const embed = new EmbedBuilder()
+		.setTitle(`NOW PLAYING\n${track.title} | ${track.author}`)
+		.setDescription(`[${track.title}](${track.url})\nDuration: ${track.duration} | Description: ${track.description}`)
+		.setThumbnail(track.thumbnail)
+
+	// Send the embed
+	queue.metadata.send({ embeds: [embed] });
+});
+
+client.player.events.on('audioTrackAdd', async (queue, track) => {
+	// Emitted when the player adds a single song to its queue
+	const queueLength = queue.tracks.toArray().length
+	console.log(queueLength);
+	if (queueLength >= 0) {
+		queue.metadata.send(`Track **${track.title}** queued`);
+	}
+});
+
+client.player.events.on('audioTracksAdd', async (queue, track) => {
+	// Emitted when the player adds multiple songs to its queue
+	queue.metadata.send(`**${queue.tracks.toArray().length} songs** queued`);
+});
+
+client.player.events.on('disconnect', async (queue) => {
+	// Emitted when the bot leaves the voice channel
+	queue.metadata.send('Looks like my job here is done, leaving now!');
+});
+client.player.events.on('emptyChannel', async (queue) => {
+	// Emitted when the voice channel has been empty for the set threshold
+	// Bot will automatically leave the voice channel with this event
+	queue.metadata.send(`Leaving because no vc activity for the past 5 minutes`);
+});
+client.player.events.on('emptyQueue', async (queue) => {
+	// Emitted when the player queue has finished
+	queue.metadata.send('Queue finished!');
+});
+
+client.player.on('debug', async (message) => {
+	// Emitted when the player sends debug info
+	// Useful for seeing what dependencies, extractors, etc are loaded
+	console.log(`General player debug event: ${message}`);
+});
+
+client.player.events.on('debug', async (queue, message) => {
+	// Emitted when the player queue sends debug info
+	// Useful for seeing what state the current queue is at
+	console.log(`Player debug event: ${message}`);
+});
+
+client.player.events.on('error', async (queue, error) => {
+	// Emitted when the player queue encounters error
+	console.log(`General player error event: ${error.message}`);
+	console.log(error);
+});
+
+client.player.events.on('playerError', async (queue, error) => {
+	// Emitted when the audio player errors while streaming audio track
+	console.log(`Player error event: ${error.message}`);
+	console.log(error);
 });
 
 // When the client is ready, run this code (only once)
